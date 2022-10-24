@@ -1,5 +1,5 @@
-# Reverse-Calling
-Script for SNP calling from GTEX RNA-seq data
+# Reverse Variant Calling
+Script for SNP calling from GTEX RNA-seq data.
 
 The RNA-seq data obtained (.bam files, not provided here) were from the GTEX project, V8. They had been aligned to the reference genome GRCh38 using STAR v2.5.3a.
 
