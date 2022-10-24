@@ -5,9 +5,9 @@
 ## [https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl](https://github.com/gatk-workflows/gatk4-rnaseq-germline-snps-indels/blob/master/gatk4-rna-best-practices.wdl]
 #############################################################
 
-###########################
+###################################
 # 0 - WORKFLOW
-###########################
+###################################
 # - MarkDuplicates
 # - SplitNCigarReads
 # - BaseRecalibrator
@@ -17,9 +17,9 @@
 # - MergeVCFs
 # - VariantFilteration
 
-###########################
+###################################
 # 1 - LOAD MODULES
-###########################
+###################################
 module load GATK/4.2.5.0-GCCcore-11.2.0-Java-11
 BWA/0.7.17-GCCcore-11.2.0
 module load Java/11.0.2(11)  # Java/13.0.2(13) availible but gatk uses 11 so stick with 11?
@@ -28,35 +28,35 @@ module load SAMtools/1.13-GCC-10.3.0
 module load BCFtools/1.12-GCC-10.3.0
 module load picard/2.23.0-Java-11
 
-###########################
+###################################
 # 2 - VIEW DATA
-###########################
+###################################
 samtools view <GTEX_filename.bam> | head -n 10
 wc -l <GTEX_file.bam>
 samtools view -H <GTEX_filename.bam>
-# From the header of our .bam files we can see that STAR_2.5.3a was used for the alignment.
-# v8 uses STAR 2.5.3a, and GRCH38 v26 (https://www.gtexportal.org/home/releaseInfoPage).
+# From the header of our .bam files we can see that STAR_2.5.3a was used for the alignment
+# v8 uses STAR 2.5.3a, and GRCH38 v26 (https://www.gtexportal.org/home/releaseInfoPage)
 # Our .bam file is, therefore, v8.
-# Check for all of our other .bam files.
+# Check for all of our other .bam files
 for f in GT*.bam; do samtools view -H "$f" | if grep -q "STAR_2.5.3a"; then echo "$f"; fi ; done
 # they are all v8
 
-###########################
+###################################
 # 3 - SORT FILES
-###########################
-# Files should have already been sorted during the alignment stage. If not, use samtools to sort.
+###################################
+# Files should have already been sorted during the alignment stage. If not, use SAMtools to sort.
 samtools sort file.bam -o file_sorted.bam
 
-###########################
+###################################
 # 4 - INDEX BAM FILES
-###########################
+###################################
 parallel  samtools index ::: *.bam
 # if this doesn't work, make a loop
 for f in *.bam; do samtools index "$f" "$f".bai ; done
 
-###########################
+###################################
 # 5 - DOWNLOAD REFERENCE GENEOME 
-###########################
+###################################
 mkdir ref_genome
 cd ref_genome
 #  https://github.com/broadinstitute/gtex-pipeline/blob/master/TOPMed_RNAseq_pipeline.md
@@ -70,9 +70,9 @@ wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta.fai
 cd ..
 
-###########################
+###################################
 # 6 - DOWNLOAD KNOWN SITES
-###########################
+###################################
 mkdir known_sites
 cd known_sites
 # known sites snp
@@ -85,9 +85,9 @@ wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
 cd ..
 
-###########################
+###################################
 # 7 - START MAIN CODE
-###########################
+###################################
 # Call genotypes on ALL postitions 
 for f in GTEX*.bam
 do 
@@ -130,9 +130,7 @@ gatk --java-options "-Xmx4G" SelectVariants -V GTEX.vcf.gz -select-type SNP -O G
 gatk --java-options "-Xmx4G" SelectVariants -V GTEX.vcf.gz -select-type INDEL -O GTEX_indels.vcf.gz
 
 # VariantFiltration
-# Label snps and indels to be filtered
-
-# using gatk guidelines
+# Label snps and indels to be filtered using gatk guidelines
 # https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
 
 gatk VariantFiltration \
@@ -155,6 +153,7 @@ gatk VariantFiltration \
     -O marked_filters_GTEX_indels.vcf.gz
 
 # Use BCFtools to apply these filters
+# https://link.springer.com/protocol/10.1007/978-1-0716-2293-3_13#Bib1
 bcftools view --apply-filters .,PASS marked_filters_GTEX_snps.vcf.gz | bgzip -c > filtered_GTEX_snps.vcf.gz
 bcftools view --apply-filters .,PASS marked_filters_GTEX_indels.vcf.gz | bgzip -c > filtered_GTEX_indels.vcf.gz
 
