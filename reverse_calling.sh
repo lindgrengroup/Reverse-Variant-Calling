@@ -97,20 +97,20 @@ do
 	# Use Picard to add or change groups (this was not needed in our case)
 	# java -jar $EBROOTPICARD/picard.jar AddOrReplaceReadGroups I=dedup_"$f" O=RG_dedup_"$f" RGID=GBR RGLB=lib1 RGPL=ILLUINA SORT_ORDER=coordinate RGPU=unit1 RGSM="${f%.chrom20*}"
 	
-  # Use SplitNCigar to split alignment overlapping exon/intron junction and rescaled mapping quality
-  gatk SplitNCigarReads -R ref_genome/Homo_sapiens_assembly38.fasta -I dedup_"$f" -O snc_dedup_"$f"
+	# Use SplitNCigar to split alignment overlapping exon/intron junction and rescaled mapping quality
+  	gatk SplitNCigarReads -R ref_genome/Homo_sapiens_assembly38.fasta -I dedup_"$f" -O snc_dedup_"$f"
   
-  # Use GATK to create a table for BQSR 
+  	# Use GATK to create a table for BQSR 
 	gatk --java-options -Xmx4G BaseRecalibrator -R ref_genome/Homo_sapiens_assembly38.fasta -I snc_dedup_"$f" --known-sites known_sites/1000G_phase1.snps.high_confidence.hg38.vcf.gz --known-sites known_sites/Homo_sapiens_assembly38.known_indels.vcf.gz -O recal_data_"${f%.Aligned*}".table
 	
-  # Use GATK to apply quality scores
+  	# Use GATK to apply quality scores
 	gatk --java-options -Xmx4G ApplyBQSR -R ref_genome/Homo_sapiens_assembly38.fasta -I snc_dedup_"$f" --bqsr-recal-file recal_data_"${f%.Aligned*}".table -O BQSR_snc_dedup_"$f"
 	
-  # Scatter interval list
-  # Skip this step because we are not dealing with specific intervals
-  # more info: https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists
+  	# Scatter interval list
+  	# Skip this step because we are not dealing with specific intervals
+  	# more info: https://gatk.broadinstitute.org/hc/en-us/articles/360035531852-Intervals-and-interval-lists
   
-  # Use GATK haplotype caller (make gvcf files)
+  	# Use GATK haplotype caller (make gvcf files)
 	gatk --java-options -Xmx4G HaplotypeCaller -R ref_genome/Homo_sapiens_assembly38.fasta -I BQSR_snc_dedup_"$f" -O BQSR_snc_dedup_"${f%.bam}".g.vcf.gz -bamout BQSR_snc_dedup_"${f%.bam}".out.bam -ERC GVCF
 done
 
