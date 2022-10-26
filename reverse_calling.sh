@@ -120,7 +120,13 @@ done
 files=(*.g.vcf.gz)
 printf -v joined '%s -V ' "${files[@]}"
 string="${joined% -V }"
-gatk --java-options -Xmx4G GenomicsDBImport -R ref_genome/Homo_sapiens_assembly38.fasta -V $string --genomicsdb-workspace-path GTEX_database 
+# Make a list of chromosomes then loop through them 
+# I chose to include chrM (mitochondria)
+bcftools query -f '%CHROM\n' <GTEX_file.g.vcf> | uniq | head -25 > chrom_list.txt
+mapfile -t chrom_list < chrom_list.txt
+for f in ${chrom_list[@]}
+do gatk --java-options -Xmx4G GenomicsDBImport -R ref_genome/Homo_sapiens_assembly38.fasta -V $string --genomicsdb-workspace-path GTEX_database_"$f" --intervals "$f"
+done
 
 # Perform joint genotyping on all individual samples
 gatk --java-options -Xmx4G GenotypeGVCFs -R ref_genome/Homo_sapiens_assembly38.fasta -V gendb://GTEX_database -O GTEX.vcf.gz
