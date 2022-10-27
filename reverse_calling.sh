@@ -116,50 +116,61 @@ done
 
 # Merge VFCs
 # CombineGVCFs, MergeVcfs and GatherVcfs are other options
-# Create a new GenomicsDB datastore from one or more GVCFs
+
+# Create new folders
+mkdir SNPS
+mkdir INDELS
+
+# Make a string including the GVCFs for GenomicsDB command
 files=(*.g.vcf.gz)
 printf -v joined '%s -V ' "${files[@]}"
 string="${joined% -V }"
+
 # Make a list of chromosomes then loop through them 
 # I chose to include chrM (mitochondria)
 bcftools query -f '%CHROM\n' <GTEX_file.g.vcf> | uniq | head -25 > chrom_list.txt
 mapfile -t chrom_list < chrom_list.txt
+
 for f in ${chrom_list[@]}
-do gatk --java-options -Xmx4G GenomicsDBImport -R ref_genome/Homo_sapiens_assembly38.fasta -V $string --genomicsdb-workspace-path GTEX_database_"$f" --intervals "$f"
+do 
+	# Create a new GenomicsDB datastore from one or more GVCFs
+	gatk --java-options -Xmx4G GenomicsDBImport -R ref_genome/Homo_sapiens_assembly38.fasta -V $string --genomicsdb-workspace-path GTEX_database_"$f" --intervals "$f"
+	
+	# Perform joint genotyping on all individual samples
+	gatk --java-options -Xmx4G GenotypeGVCFs -R ref_genome/Homo_sapiens_assembly38.fasta -V gendb://GTEX_database_"$f" -O GTEX_"$f".vcf.gz
+	
+	# Separate snps from indels (ready for filtering)
+	gatk --java-options "-Xmx4G" SelectVariants -V GTEX_"$f".vcf.gz -select-type SNP -O SNPS/GTEX_"$f"_snps.vcf.gz
+	gatk --java-options "-Xmx4G" SelectVariants -V GTEX_"$f".vcf.gz -select-type INDEL -O INDELS/GTEX_"$f"_indels.vcf.gz
+
+	# VariantFiltration
+	# Label snps and indels to be filtered using gatk guidelines
+	# https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
+	
+	# Hard filtering for SNPs
+	gatk VariantFiltration \
+    		-V SNPS/GTEX_"$f"_snps.vcf.gz \
+    		-filter "QD < 2.0" --filter-name "QD2" \
+    		-filter "QUAL < 30.0" --filter-name "QUAL30" \
+    		-filter "SOR > 3.0" --filter-name "SOR3" \
+    		-filter "FS > 60.0" --filter-name "FS60" \
+    		-filter "MQ < 40.0" --filter-name "MQ40" \
+    		-filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5" \
+    		-filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
+    		-O SNPS/marked_filters_GTEX_"$f"_snps.vcf.gz
+	
+	# Hard filtering for indels
+	gatk VariantFiltration \ 
+    		-V INDELS/GTEX_"$f"_indels.vcf.gz \ 
+    		-filter "QD < 2.0" --filter-name "QD2" \
+    		-filter "QUAL < 30.0" --filter-name "QUAL30" \
+    		-filter "FS > 200.0" --filter-name "FS200" \
+    		-filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \ 
+   	 	-O INDELS/marked_filters_GTEX_"$f"_indels.vcf.gz
+
+	# Use BCFtools to apply these filters
+	# https://link.springer.com/protocol/10.1007/978-1-0716-2293-3_13#Bib1
+	# https://gist.github.com/elowy01/93922762e131d7abd3c7e8e166a74a0b
+	bcftools view --apply-filters .,PASS SNPS/marked_filters_GTEX_"$f"_snps.vcf.gz | bgzip -c > SNPS/filtered_GTEX_"$f"_snps.vcf.gz
+	bcftools view --apply-filters .,PASS INDELS/marked_filters_GTEX_"$f"_indels.vcf.gz | bgzip -c > INDELS/filtered_GTEX_"$f"_indels.vcf.gz
 done
-
-# Perform joint genotyping on all individual samples
-gatk --java-options -Xmx4G GenotypeGVCFs -R ref_genome/Homo_sapiens_assembly38.fasta -V gendb://GTEX_database -O GTEX.vcf.gz
-
-# Separate snps from indels (ready for filtering)
-gatk --java-options "-Xmx4G" SelectVariants -V GTEX.vcf.gz -select-type SNP -O GTEX_snps.vcf.gz
-gatk --java-options "-Xmx4G" SelectVariants -V GTEX.vcf.gz -select-type INDEL -O GTEX_indels.vcf.gz
-
-# VariantFiltration
-# Label snps and indels to be filtered using gatk guidelines
-# https://gatk.broadinstitute.org/hc/en-us/articles/360035531112--How-to-Filter-variants-either-with-VQSR-or-by-hard-filtering
-
-gatk VariantFiltration \
-    -V GTEX_snps.vcf.gz \
-    -filter "QD < 2.0" --filter-name "QD2" \
-    -filter "QUAL < 30.0" --filter-name "QUAL30" \
-    -filter "SOR > 3.0" --filter-name "SOR3" \
-    -filter "FS > 60.0" --filter-name "FS60" \
-    -filter "MQ < 40.0" --filter-name "MQ40" \
-    -filter "MQRankSum < -12.5" --filter-name "MQRankSum-12.5" \
-    -filter "ReadPosRankSum < -8.0" --filter-name "ReadPosRankSum-8" \
-    -O marked_filters_GTEX_snps.vcf.gz
-
-gatk VariantFiltration \ 
-    -V GTEX_indels.vcf.gz \ 
-    -filter "QD < 2.0" --filter-name "QD2" \
-    -filter "QUAL < 30.0" --filter-name "QUAL30" \
-    -filter "FS > 200.0" --filter-name "FS200" \
-    -filter "ReadPosRankSum < -20.0" --filter-name "ReadPosRankSum-20" \ 
-    -O marked_filters_GTEX_indels.vcf.gz
-
-# Use BCFtools to apply these filters
-# https://link.springer.com/protocol/10.1007/978-1-0716-2293-3_13#Bib1
-bcftools view --apply-filters .,PASS marked_filters_GTEX_snps.vcf.gz | bgzip -c > filtered_GTEX_snps.vcf.gz
-bcftools view --apply-filters .,PASS marked_filters_GTEX_indels.vcf.gz | bgzip -c > filtered_GTEX_indels.vcf.gz
-
