@@ -39,7 +39,7 @@ samtools view -H <GTEX_filename.bam>
 # Our .bam file is, therefore, v8.
 # Check for all of our other .bam files
 for f in GT*.bam; do samtools view -H "$f" | if grep -q "STAR_2.5.3a"; then echo "$f"; fi ; done
-# they are all v8
+# They are all v8
 
 ###################################
 # 3 - SORT FILES
@@ -51,7 +51,7 @@ samtools sort file.bam -o file_sorted.bam
 # 4 - INDEX BAM FILES
 ###################################
 parallel  samtools index ::: *.bam
-# if this doesn't work, make a loop
+# If this doesn't work, make a loop
 for f in *.bam; do samtools index "$f" "$f".bai ; done
 
 ###################################
@@ -75,13 +75,13 @@ cd ..
 ###################################
 mkdir known_sites
 cd known_sites
-# known sites snp
+# Known sites snp
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz
-# known sites snp index
+# Known sites snp index
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz.tbi
-# indels file
+# Indels file
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.known_indels.vcf.gz
-# indels index 
+# Indels index 
 wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
 cd ..
 
