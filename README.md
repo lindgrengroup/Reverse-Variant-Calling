@@ -3,7 +3,7 @@ Workflow for SNP calling from GTEX RNA-seq data using the GATK Best Practices pi
 
 The RNA-seq data obtained (.bam files, not provided here) were from the GTEX project, V8. They had been aligned to the reference genome GRCh38 using STAR v2.5.3a.
 
-The industry-standard GATK Best Practices was closely followed (with the help of the UCLA workshop) with the addition of SplitNCigar for splitting alignment overlapping exon/intron junctions and rescaling mapping quality.
+The industry-standard GATK Best Practices was closely followed (with the help of the UCLA workshop) with the addition of SplitNCigar for splitting alignment overlapping exon/intron junctions and rescaling mapping quality. Hard filtering was performed rather than using VQSR (as there is not yet the RNAseq training/truth resources that are needed).
 
 ## Resources:
 - GATK pipeline: https://gatk.broadinstitute.org/hc/en-us <br />
