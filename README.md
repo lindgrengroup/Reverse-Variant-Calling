@@ -10,3 +10,7 @@ UCLA youtube tutorial 1: https://www.youtube.com/watch?v=xLm3Le0rfYQ <br />
 UCLA youtube tutorial 2: https://www.youtube.com/watch?v=hRsjy1Z8QDA&t=552s <br />
 GATK pipeline: https://gatk.broadinstitute.org/hc/en-us <br />
 RNA-calling: https://link.springer.com/protocol/10.1007/978-1-0716-2293-3_13 <br />
+
+## Other software packages used:
+https://github.com/samtools/
+https://broadinstitute.github.io/picard/
