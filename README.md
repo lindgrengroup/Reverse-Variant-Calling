@@ -12,5 +12,5 @@ GATK pipeline: https://gatk.broadinstitute.org/hc/en-us <br />
 RNA-calling: https://link.springer.com/protocol/10.1007/978-1-0716-2293-3_13 <br />
 
 ## Other software packages used:
-https://github.com/samtools/
-https://broadinstitute.github.io/picard/
+- https://github.com/samtools/
+- https://broadinstitute.github.io/picard/
